@@ -30,11 +30,11 @@ const walkReplyChain = async function(message) {
     return chain;
 }
 
-const gptRespondToMessage = async function(message, initialPrompt) {
+const gptRespondToMessage = async function(client, message, initialPrompt) {
     const questionReference = message.reference;
     const messageSplit = message.content.substring(message.content.indexOf(" ") + 1);
 
-    message.react("✅");
+    const reaction = await message.react("<:loading:1123229018116853791>");
 
     let questionBuild = `${initialPrompt}\n`;
     const replyChain = await walkReplyChain(message);
@@ -52,6 +52,8 @@ const gptRespondToMessage = async function(message, initialPrompt) {
     } else {
         await message.reply(finalMessage);
     }
+    await reaction.users.remove(client.user);
+    await message.react("<:check:1095091343551909950>");
 }
 
 let killswitch = false;
@@ -76,9 +78,6 @@ const init = async function() {
 
       if (killswitch && !owner)
         return;
-        
-      if (message.channelId != "993879786546003969" && !owner && !whiteList)
-        return;
 
       if (whiteListEnable && !owner && !whiteList.includes(message.author.id))
         return;
@@ -92,13 +91,13 @@ const init = async function() {
             // gptRespondToMessage(message, `The following question is in relation to the programming language Luau in the Roblox game engine.
             // If the question is asking you to provide code, please provide the least amount of context as possible, and just post your response as code.
             // The question is posted in a chat channel with multiple users, you are the user "Luna".`)
-            gptRespondToMessage(message, `The following question is in relation to the programming language Luau in the Roblox game engine.
+            gptRespondToMessage(client, message, `The following question is in relation to the programming language Luau in the Roblox game engine.
             You must not give any code examples, except for showing simple concepts, you must not post edits of other peoples code, you must instead describe the problem and tell them how to fix it themselves. You may post resources and explanations of issues and fixes.
             Do not attempt to fix code provided, only provide solutions in the form of giving them information, explanations and resources.
             The question is posted in a chat channel with multiple users, you are the user "Luna".`)      
         } 
         if (message.content.startsWith(";gpt")) {
-            gptRespondToMessage(message, "");
+            gptRespondToMessage(client, message, "");
         } 
 
         if (!owner)
