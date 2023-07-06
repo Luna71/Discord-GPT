@@ -11,7 +11,7 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 const whiteListEnable = false;
-const whiteList = ["300617495038132235", "584070402679111682"];
+const whiteList = ["300617495038132235", "584070402679111682", "246296808601419776"];
 const blackList = ["529526805523071027, 1110090947041181697"];
 
 const walkReplyChain = async function(message) {
@@ -46,11 +46,20 @@ const gptRespondToMessage = async function(client, message, initialPrompt) {
         max_tokens: 4000,
     });
     const finalMessage = chatCompletion.data.choices[0].message.content.replace("Luna:", "");
+
+    const bufferLength = 1900
+    let bufferLocation = bufferLength;
+    let messageBuffer = finalMessage.substring(0, bufferLocation);
+    while (messageBuffer.length > 0) {
     if (questionReference) {
-        const ref = await message.fetchReference();
-        await ref.reply(finalMessage);
+	const ref = await message.fetchReference();
+	await ref.reply(messageBuffer);
     } else {
-        await message.reply(finalMessage);
+	await message.reply(messageBuffer);
+    }
+        const oldLocation = bufferLocation;
+	bufferLocation += 1900;
+	messageBuffer = finalMessage.substring(oldLocation, bufferLocation);	
     }
     await reaction.users.remove(client.user);
     await message.react("<:check:1095091343551909950>");
@@ -87,17 +96,20 @@ const init = async function() {
 
       try{
         const reference = message.reference && await message.fetchReference();
-        if (message.content.startsWith(";luna") || message.mentions.has(client.user) || (reference && reference.author.id == client.user.id)) {
-            // gptRespondToMessage(message, `The following question is in relation to the programming language Luau in the Roblox game engine.
-            // If the question is asking you to provide code, please provide the least amount of context as possible, and just post your response as code.
-            // The question is posted in a chat channel with multiple users, you are the user "Luna".`)
-            gptRespondToMessage(client, message, `The following question is in relation to the programming language Luau in the Roblox game engine.
-            You must not give any code examples, except for showing simple concepts, you must not post edits of other peoples code, you must instead describe the problem and tell them how to fix it themselves. You may post resources and explanations of issues and fixes.
-            Do not attempt to fix code provided, only provide solutions in the form of giving them information, explanations and resources.
-            The question is posted in a chat channel with multiple users, you are the user "Luna".`)      
-        } 
-        if (message.content.startsWith(";gpt")) {
+        if (message.content.startsWith(";gpt") && (owner || whiteList.includes(message.author.id))) {
             gptRespondToMessage(client, message, "");
+        } 
+        else if (message.content.startsWith(";luna") || message.mentions.has(client.user) || (reference && reference.author.id == client.user.id)) {
+const prompt1 = `The following question is in relation to the programming language Luau in the Roblox game engine. 
+When people ask you to fix code, you should not fix their code for them, when you want to write code to show how to fix an issue, instead write example code showing the issue which does not use their variable names, and write the least amount of code possible to showcase the fix.
+Provide resources to accompany explanations where possible
+The question is posted in a chat channel with multiple users, you are the user "Luna".`
+	    const prompt2 = `The following question is in relation to the programming language Luau in the Roblox game engine. 
+When people ask you to fix code, you should not fix their code for them, when you want to write code to show how to fix an issue, instead write example code showing the issue which does not use their variable names, and write the least amount of code possible to showcase the fix.
+When people ask you to make something, or how to make something, split the problem up into different concepts, and provide explanations for how to solve each part of the problem, rather than a full solution.
+Provide resources to accompany explanations where possible
+The question is posted in a chat channel with multiple users, you are the user "Luna".`;
+            gptRespondToMessage(client, message, prompt2)      
         } 
 
         if (!owner)
